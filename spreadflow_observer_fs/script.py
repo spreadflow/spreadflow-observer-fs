@@ -1,0 +1,138 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import unicode_literals
+
+import Queue
+import argparse
+import os
+import sys
+import threading
+from spreadflow_observer_fs.protocol import MessageFactory
+from pathtools.patterns import match_path, filter_paths
+from watchdog.events import PatternMatchingEventHandler
+from watchdog.observers import Observer
+
+
+class EventHandler(PatternMatchingEventHandler):
+    def __init__(self, pattern, queue):
+        super(EventHandler, self).__init__(patterns=[pattern],
+                ignore_patterns=None, ignore_directories=True,
+                case_sensitive=False)
+        self._queue = queue
+        self._inserts = []
+        self._deletes = []
+
+    def on_moved(self, event):
+        if event.src_path and match_path(event.src_path,
+                included_patterns=self.patterns,
+                excluded_patterns=self.ignore_patterns,
+                case_sensitive=self.case_sensitive):
+            self._deletes.append(event.src_path)
+        if event.dest_path and match_path(event.dest_path,
+                included_patterns=self.patterns,
+                excluded_patterns=self.ignore_patterns,
+                case_sensitive=self.case_sensitive):
+            self._inserts.append(event.dest_path)
+        self.flush()
+
+    def on_created(self, event):
+        self._inserts.append(event.src_path)
+        self.flush()
+
+    def on_deleted(self, event):
+        self._deletes.append(event.src_path)
+        self.flush()
+
+    def on_modified(self, event):
+        self._deletes.append(event.src_path)
+        self._inserts.append(event.src_path)
+        self.flush()
+
+    def flush(self):
+        if len(self._inserts) or len(self._deletes):
+            self._queue.put((tuple(self._deletes), tuple(self._inserts)))
+
+        self._inserts = []
+        self._deletes = []
+
+
+class WatchdogObserverCommand(object):
+
+    def __init__(self, out = sys.stdout):
+        self._out = out
+
+    def run(self, args):
+
+        parser = argparse.ArgumentParser(prog=args[0])
+        parser.add_argument('directory', metavar='DIR',
+                            help='Base directory')
+        parser.add_argument('query', metavar='PATTERN',
+                            help='Pattern or query string')
+        parser.add_argument('-n', '--native-query', action='store_true',
+                            help='PATTERN is a native query for the selected observer')
+
+        parser.parse_args(args[1:], namespace=self)
+
+        queue = Queue.Queue()
+
+        stop_sentinel = object()
+        def stdin_watch():
+            while sys.stdin.read():
+                pass
+            queue.put(stop_sentinel)
+
+        stdin_watch_thread = threading.Thread(target=stdin_watch)
+        stdin_watch_thread.start()
+
+        pattern = self.query
+        if not self.native_query:
+            pattern = '*/' + pattern
+
+        event_handler = EventHandler(pattern, queue)
+
+        observer = Observer()
+        observer.schedule(event_handler, self.directory, recursive=True)
+        observer.start()
+
+        factory = MessageFactory()
+
+        for root, dirs, files in os.walk(os.path.abspath(self.directory)):
+            paths = [os.path.join(root, f) for f in files]
+            inserts = tuple(filter_paths(paths, included_patterns=[pattern], case_sensitive=False))
+            if len(inserts):
+                queue.put((tuple(), tuple(inserts)))
+
+        while True:
+            try:
+                item = queue.get(timeout=1000)
+                if item == stop_sentinel:
+                    break
+
+                (deletable_paths, insertable_paths) = item
+
+                insertable_meta = []
+                insertable_paths_ok = []
+                for path in insertable_paths[:]:
+                    try:
+                        insertable_meta.append({'stat': tuple(os.stat(path))})
+                        insertable_paths_ok.append(path)
+                    except OSError:
+                        continue
+
+                for msg in factory.update(deletable_paths, tuple(insertable_paths_ok), tuple(insertable_meta)):
+                    self._out.write(msg)
+                    self._out.flush()
+
+                queue.task_done()
+            except Queue.Empty:
+                pass
+            except KeyboardInterrupt:
+                break
+
+        observer.stop()
+        observer.join()
+        stdin_watch_thread.join()
+
+def main():
+    cmd = WatchdogObserverCommand()
+    sys.exit(cmd.run(sys.argv))
