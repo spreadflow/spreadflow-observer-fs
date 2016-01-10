@@ -13,7 +13,7 @@ class BinaryBuild(build):
 
         if platform == 'darwin':
             ext_path = os.path.join(BASEPATH, 'ext/spotlight')
-            ext_target = os.path.join(ext_path, 'spreadflow-observer-fs-spotlight')
+            ext_target = os.path.join(ext_path, 'build/spreadflow-observer-fs-spotlight')
         else:
             return
 
