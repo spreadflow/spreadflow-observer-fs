@@ -1,0 +1,3 @@
+[submodule "ext/spotlight/vendor/ObjectiveBSON"]
+	path = ext/spotlight/vendor/ObjectiveBSON
+	url = https://github.com/JeremyOT/ObjectiveBSON.git
