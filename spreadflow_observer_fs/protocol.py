@@ -60,6 +60,7 @@ class MessageFactory(object):
             metadata += tuple((oid, meta) for oid, meta in zip(insertable_oids, insertable_meta) if oid in inserted_oids)
 
         msg = {
+            'type': 'delta',
             'date': datetime.datetime.now(),
             'deletes': deleted_oids,
             'inserts': inserted_oids,
