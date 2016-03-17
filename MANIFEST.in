@@ -1,3 +1,0 @@
-# Include non-python source code from ext
-recursive-include ext *
-recursive-exclude ext/spotlight spreadflow-observer-fs-spotlight *.m.o
