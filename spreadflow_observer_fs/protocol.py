@@ -31,7 +31,8 @@ class MessageFactory(object):
 
     CHUNK_SIZE = 8
 
-    def __init__(self):
+    def __init__(self, port_name = 'default'):
+        self.port_name = port_name
         self._repository = Repository()
 
 
@@ -59,12 +60,17 @@ class MessageFactory(object):
             (inserted_paths, inserted_oids) = zip(*inserted_objects)
             metadata += tuple((oid, meta) for oid, meta in zip(insertable_oids, insertable_meta) if oid in inserted_oids)
 
-        msg = {
+        item = {
             'type': 'delta',
             'date': datetime.datetime.now(),
             'deletes': deleted_oids,
             'inserts': inserted_oids,
             'data': dict(metadata)
+        }
+
+        msg = {
+            'port': self.port_name,
+            'item': item
         }
 
         return BSON.encode(msg)
