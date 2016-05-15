@@ -2,7 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from spreadflow_core.client import SchedulerClient, MessageParser
+from spreadflow_core.client import SchedulerClient
+from spreadflow_format_bson import MessageParser
 
 class FilesystemObserverSource(SchedulerClient):
 

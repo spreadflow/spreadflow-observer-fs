@@ -2,6 +2,7 @@ from setuptools import setup
 
 tests_require = [
     'SpreadFlowDelta[tests]',
+    'SpreadFlowFormatBSON',
     'coveralls',
     'mock',
     'testtools'
@@ -31,6 +32,7 @@ setup(
     },
     install_requires=[
         'SpreadFlowCore',
+        'SpreadFlowFormatBSON',
         'pathtools',
         'pymongo',
         'watchdog'
