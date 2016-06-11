@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import datetime
+import functools
 import hashlib
 from bson import BSON
 
@@ -37,7 +38,7 @@ class MessageFactory(object):
 
 
     def _metadata_generate_oids(self, metadata):
-        return tuple(hashlib.sha1(repr(meta)).hexdigest() for meta in metadata)
+        return tuple(hashlib.sha1(repr(meta).encode('utf-8')).hexdigest() for meta in metadata)
 
 
     def _metadata_generate_uris(self, paths):
@@ -45,7 +46,7 @@ class MessageFactory(object):
 
 
     def _metadata_merge(self, *args):
-        return tuple(reduce(lambda x, y: dict(x.items() + y.items()), dicts, {}) for dicts in zip(*args))
+        return tuple(functools.reduce(lambda x, y: dict(list(x.items()) + list(y.items())), dicts, {}) for dicts in list(zip(*args)))
 
     def _construct_message(self, deleted_objects, inserted_objects, insertable_oids, insertable_meta):
         deleted_oids = ()
@@ -53,11 +54,11 @@ class MessageFactory(object):
         metadata = ()
 
         if deleted_objects:
-            (deleted_paths, deleted_oids) = zip(*deleted_objects)
+            (deleted_paths, deleted_oids) = list(zip(*deleted_objects))
             metadata += tuple(zip(deleted_oids, self._metadata_generate_uris(deleted_paths)))
 
         if inserted_objects:
-            (inserted_paths, inserted_oids) = zip(*inserted_objects)
+            (inserted_paths, inserted_oids) = list(zip(*inserted_objects))
             metadata += tuple((oid, meta) for oid, meta in zip(insertable_oids, insertable_meta) if oid in inserted_oids)
 
         item = {
@@ -78,9 +79,9 @@ class MessageFactory(object):
 
     def _generate_messages(self, deleted_objects, inserted_objects, insertable_oids, insertable_meta):
         if len(deleted_objects) + len(inserted_objects) > self.CHUNK_SIZE:
-            for i in xrange(0, len(deleted_objects), self.CHUNK_SIZE):
+            for i in range(0, len(deleted_objects), self.CHUNK_SIZE):
                 yield self._construct_message(deleted_objects[i:i+self.CHUNK_SIZE], (), insertable_oids, insertable_meta)
-            for i in xrange(0, len(inserted_objects), self.CHUNK_SIZE):
+            for i in range(0, len(inserted_objects), self.CHUNK_SIZE):
                 yield self._construct_message((), inserted_objects[i:i+self.CHUNK_SIZE], insertable_oids, insertable_meta)
         elif len(deleted_objects) + len(inserted_objects) > 0:
             yield self._construct_message(deleted_objects, inserted_objects, insertable_oids, insertable_meta)
@@ -100,5 +101,5 @@ class MessageFactory(object):
         merged_metadata = self._metadata_merge(insertable_meta, uri_metadata)
         oids = self._metadata_generate_oids(merged_metadata)
 
-        (deleted_objects, inserted_objects) = self._repository.update(deletable_paths, zip(insertable_paths, oids))
+        (deleted_objects, inserted_objects) = self._repository.update(deletable_paths, list(zip(insertable_paths, oids)))
         return self._generate_messages(tuple(deleted_objects), tuple(inserted_objects), oids, merged_metadata)

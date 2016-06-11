@@ -2,7 +2,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-import Queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 import argparse
 import os
 import sys
@@ -14,11 +17,11 @@ from watchdog.observers import Observer
 
 
 class EventHandler(PatternMatchingEventHandler):
-    def __init__(self, pattern, queue):
+    def __init__(self, pattern, changes_queue):
         super(EventHandler, self).__init__(patterns=[pattern],
                 ignore_patterns=None, ignore_directories=True,
                 case_sensitive=False)
-        self._queue = queue
+        self._changes_queue = changes_queue
         self._inserts = []
         self._deletes = []
 
@@ -50,7 +53,7 @@ class EventHandler(PatternMatchingEventHandler):
 
     def flush(self):
         if len(self._inserts) or len(self._deletes):
-            self._queue.put((tuple(self._deletes), tuple(self._inserts)))
+            self._changes_queue.put((tuple(self._deletes), tuple(self._inserts)))
 
         self._inserts = []
         self._deletes = []
@@ -58,8 +61,15 @@ class EventHandler(PatternMatchingEventHandler):
 
 class WatchdogObserverCommand(object):
 
-    def __init__(self, out = sys.stdout):
-        self._out = out
+    def __init__(self, out=None):
+        if out is None:
+            try:
+                # Python 3 does not allow us to write binary data to stdout.
+                # Except if we use the buffer directly :/
+                # http://stackoverflow.com/a/908440/2779045
+                self._out = sys.stdout.buffer
+            except AttributeError:
+                self._out = sys.stdout
 
     def run(self, args):
 
@@ -73,13 +83,13 @@ class WatchdogObserverCommand(object):
 
         parser.parse_args(args[1:], namespace=self)
 
-        queue = Queue.Queue()
+        changes_queue = queue.Queue()
 
         stop_sentinel = object()
         def stdin_watch():
             while sys.stdin.read():
                 pass
-            queue.put(stop_sentinel)
+            changes_queue.put(stop_sentinel)
 
         stdin_watch_thread = threading.Thread(target=stdin_watch)
         stdin_watch_thread.start()
@@ -88,7 +98,7 @@ class WatchdogObserverCommand(object):
         if not self.native_query:
             pattern = '*/' + pattern
 
-        event_handler = EventHandler(pattern, queue)
+        event_handler = EventHandler(pattern, changes_queue)
 
         observer = Observer()
         observer.schedule(event_handler, self.directory, recursive=True)
@@ -100,11 +110,11 @@ class WatchdogObserverCommand(object):
             paths = [os.path.join(root, f) for f in files]
             inserts = tuple(filter_paths(paths, included_patterns=[pattern], case_sensitive=False))
             if len(inserts):
-                queue.put((tuple(), tuple(inserts)))
+                changes_queue.put((tuple(), tuple(inserts)))
 
         while True:
             try:
-                item = queue.get(timeout=1000)
+                item = changes_queue.get(timeout=1000)
                 if item == stop_sentinel:
                     break
 
@@ -123,8 +133,8 @@ class WatchdogObserverCommand(object):
                     self._out.write(msg)
                     self._out.flush()
 
-                queue.task_done()
-            except Queue.Empty:
+                changes_queue.task_done()
+            except queue.Empty:
                 pass
             except KeyboardInterrupt:
                 break

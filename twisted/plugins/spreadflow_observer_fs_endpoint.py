@@ -57,7 +57,7 @@ class SpreadflowObserverFSProcessEndpoint(object):
             args += ('-n',)
         args += (directory, query)
 
-        return ProcessEndpoint(reactor, executable, args=map(fsencode, args))
+        return ProcessEndpoint(reactor, executable, args=list(map(fsencode, args)))
 
 
     def parseStreamClient(self, reactor, *args, **kwargs):
