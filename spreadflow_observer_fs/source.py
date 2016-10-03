@@ -3,16 +3,14 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from spreadflow_core.remote import MessageHandler, SchedulerClientFactory, \
-    SchedulerProtocol, ClientEndpointMixin
+    SchedulerProtocol, ClientEndpointMixin, StrportGeneratorMixin
 from spreadflow_format_bson import MessageParser
 
-class FilesystemObserverSource(ClientEndpointMixin):
+class FilesystemObserverSource(ClientEndpointMixin, StrportGeneratorMixin):
 
     def __init__(self, query, directory, **kwds):
-        self.strport = 'spreadflow-observer-fs:' + ':'.join([directory, query])
-
-        for key, value in kwds.items():
-            self.strport += ':' + key + '=' + value
+        self.strport = self.strport_generate('spreadflow-observer-fs',
+                                             directory, query, **kwds)
 
     def get_client_protocol_factory(self, scheduler, reactor):
         handler = MessageHandler(scheduler, {'default': self})
