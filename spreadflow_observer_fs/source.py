@@ -8,8 +8,11 @@ from spreadflow_format_bson import MessageParser
 
 class FilesystemObserverSource(ClientEndpointMixin):
 
-    def __init__(self, query, directory):
+    def __init__(self, query, directory, **kwds):
         self.strport = 'spreadflow-observer-fs:' + ':'.join([directory, query])
+
+        for key, value in kwds.items():
+            self.strport += ':' + key + '=' + value
 
     def get_client_protocol_factory(self, scheduler, reactor):
         handler = MessageHandler(scheduler, {'default': self})
