@@ -61,6 +61,10 @@ class EventHandler(PatternMatchingEventHandler):
 
 class WatchdogObserverCommand(object):
 
+    query = None
+    native_query = None
+    directory = None
+
     def __init__(self, out=None):
         if out is None:
             try:
