@@ -14,7 +14,6 @@ import errno
 import fcntl
 import fixtures
 import os
-import shutil
 import subprocess
 import threading
 import time
@@ -28,7 +27,6 @@ except ImportError:
     import Queue as queue
 
 MAXWAIT = 5.0
-FIXTURE_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
 
 class _TimeoutError(Exception):
     pass
@@ -99,9 +97,9 @@ class SpreadflowObserverIntegrationTestCase(unittest.TestCase):
         return '\nSTDOUT:\n{0}\nSTDERR:\n{1}'.format(
             stdout or '*** EMPTY ***', stderr or '*** EMPTY ***')
 
-    def test_subprocess_worker_producer(self):
+    def test_observer_process(self):
         """
-        Worker process reads messages from stdin and writes results to stdout.
+        Observer watches a directory for file changes and reports on stdout.
         """
 
         with fixtures.TempDir() as fix:
