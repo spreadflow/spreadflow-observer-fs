@@ -10,6 +10,8 @@ install:
   - pip install -r test-requirements.txt
   - pip install -e .[tests]
 script:
+  - pylint --errors-only spreadflow_core
+  - pyflakes spreadflow_core
   - COVERAGE_PROCESS_START=`pwd`/.coveragerc trial spreadflow_observer_fs
   - coverage combine `pwd` `pwd`/_trial_temp
 after_success:
