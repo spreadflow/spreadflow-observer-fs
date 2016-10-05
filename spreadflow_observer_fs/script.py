@@ -71,7 +71,7 @@ class WatchdogObserverCommand(object):
                 # Python 3 does not allow us to write binary data to stdout.
                 # Except if we use the buffer directly :/
                 # http://stackoverflow.com/a/908440/2779045
-                self._out = sys.stdout.buffer
+                self._out = sys.stdout.buffer #pylint: disable=no-member
             except AttributeError:
                 self._out = sys.stdout
 
