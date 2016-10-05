@@ -2,6 +2,6 @@ coveralls
 pyflakes
 pylint<1.5
 testtools>=2.2.0
--e git+https://github.com/spreadflow/spreadflow-core#egg=SpreadFlowCore
--e git+https://github.com/spreadflow/spreadflow-delta#egg=SpreadFlowDelta
--e git+https://github.com/spreadflow/spreadflow-format-bson#egg=SpreadFlowFormatBSON
+git+https://github.com/spreadflow/spreadflow-core#egg=SpreadFlowCore
+git+https://github.com/spreadflow/spreadflow-delta#egg=SpreadFlowDelta
+git+https://github.com/spreadflow/spreadflow-format-bson#egg=SpreadFlowFormatBSON
