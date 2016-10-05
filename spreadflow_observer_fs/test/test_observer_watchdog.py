@@ -10,13 +10,9 @@ from __future__ import division
 from __future__ import unicode_literals
 
 import collections
-import errno
-import fcntl
 import fixtures
 import os
 import subprocess
-import threading
-import time
 import unittest
 
 from bson import BSON
@@ -42,7 +38,6 @@ class SpreadflowObserverIntegrationTestCase(unittest.TestCase):
         with fixtures.TempDir() as fix:
 
             rundir = fix.path
-            pidfile = os.path.join(rundir, 'filesystem observer.pid')
             argv = [rundir, '*.txt']
             proc = subprocess.Popen(['spreadflow-observer-fs-default'] + argv,
                                     stdin=subprocess.PIPE,
