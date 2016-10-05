@@ -1,9 +1,9 @@
 from setuptools import setup
 
 tests_require = [
+    'SpreadFlowCore[tests]',
     'SpreadFlowDelta[tests]',
     'SpreadFlowFormatBSON',
-    'coveralls',
     'mock',
     'testtools'
 ]
