@@ -7,13 +7,13 @@ try:
 except ImportError:
     import Queue as queue
 import argparse
+import importlib
 import os
 import sys
 import threading
 from spreadflow_observer_fs.protocol import MessageFactory
 from pathtools.patterns import match_path, filter_paths
 from watchdog.events import PatternMatchingEventHandler
-from watchdog.observers import Observer
 
 
 class EventHandler(PatternMatchingEventHandler):
@@ -75,6 +75,11 @@ class WatchdogObserverCommand(object):
             except AttributeError:
                 self._out = sys.stdout
 
+    def load_observer(self, fqcn):
+        module_name, class_name = fqcn.rsplit(".", 1)
+        observer_module = importlib.import_module(module_name)
+        return getattr(observer_module, class_name)
+
     def run(self, args):
 
         parser = argparse.ArgumentParser(prog=args[0])
@@ -84,8 +89,16 @@ class WatchdogObserverCommand(object):
                             help='Pattern or query string')
         parser.add_argument('-n', '--native-query', action='store_true',
                             help='PATTERN is a native query for the selected observer')
+        parser.add_argument('-o', '--observer-class',
+                            help='Specify the watchdog observer implementation (fully qualified class name).',
+                            default='watchdog.observers.Observer')
 
         parser.parse_args(args[1:], namespace=self)
+
+        try:
+            Observer = self.load_observer(self.observer_class)
+        except:
+            parser.error("Watchdog observer implementation not found")
 
         changes_queue = queue.Queue()
 
