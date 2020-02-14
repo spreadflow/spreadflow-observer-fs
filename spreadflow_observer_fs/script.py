@@ -64,6 +64,7 @@ class WatchdogObserverCommand(object):
     query = None
     native_query = None
     directory = None
+    observer_class = None
 
     def __init__(self, out=None):
         if out is None:
