@@ -64,7 +64,7 @@ class WatchdogObserverCommand(object):
     query = None
     native_query = None
     directory = None
-    observer_class = None
+    observer_class = 'watchdog.observers.Observer'
 
     def __init__(self, out=None):
         if out is None:
@@ -90,9 +90,8 @@ class WatchdogObserverCommand(object):
                             help='Pattern or query string')
         parser.add_argument('-n', '--native-query', action='store_true',
                             help='PATTERN is a native query for the selected observer')
-        parser.add_argument('-o', '--observer-class',
-                            help='Specify the watchdog observer implementation (fully qualified class name).',
-                            default='watchdog.observers.Observer')
+        parser.add_argument('-o', '--observer-class', metavar='CLASS',
+                            help='Specify the watchdog observer implementation (fully qualified class name).')
 
         parser.parse_args(args[1:], namespace=self)
 
